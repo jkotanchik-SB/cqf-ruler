@@ -1,25 +1,19 @@
-package org.opencds.cqf.config;
+package org.opencds.cqf.evaluation.config;
+
+import org.cqframework.cql.cql2elm.*;
+import org.cqframework.cql.cql2elm.model.TranslatedLibrary;
+import org.hl7.elm.r1.VersionedIdentifier;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.cqframework.cql.cql2elm.CqlTranslator;
-import org.cqframework.cql.cql2elm.CqlTranslatorException;
-import org.cqframework.cql.cql2elm.CqlTranslatorIncludeException;
-import org.cqframework.cql.cql2elm.LibraryManager;
-import org.cqframework.cql.cql2elm.LibrarySourceLoader;
-import org.cqframework.cql.cql2elm.LibrarySourceProvider;
-import org.cqframework.cql.cql2elm.ModelManager;
-import org.cqframework.cql.cql2elm.model.TranslatedLibrary;
-import org.hl7.elm.r1.VersionedIdentifier;
-
 public class NonCachingLibraryManager extends LibraryManager {
 
     private ModelManager modelManager;
     private final CopiedLibrarySourceLoader librarySourceLoader;
-    
+
     public NonCachingLibraryManager(ModelManager modelManager) {
         super(modelManager);
 
@@ -60,13 +54,13 @@ public class NonCachingLibraryManager extends LibraryManager {
         }
 
         try {
-            CqlTranslator translator = CqlTranslator.fromStream(librarySource, modelManager, this, 
-                CqlTranslator.Options.EnableAnnotations,
-                CqlTranslator.Options.EnableLocators,
-                CqlTranslator.Options.DisableListDemotion,
-                CqlTranslator.Options.DisableListPromotion,
-                CqlTranslator.Options.DisableMethodInvocation);
-                
+            CqlTranslator translator = CqlTranslator.fromStream(librarySource, modelManager, this,
+                    CqlTranslator.Options.EnableAnnotations,
+                    CqlTranslator.Options.EnableLocators,
+                    CqlTranslator.Options.DisableListDemotion,
+                    CqlTranslator.Options.DisableListPromotion,
+                    CqlTranslator.Options.DisableMethodInvocation);
+
             if (errors != null) {
                 errors.addAll(translator.getExceptions());
             }
@@ -89,7 +83,7 @@ public class NonCachingLibraryManager extends LibraryManager {
 class CopiedLibrarySourceLoader implements LibrarySourceLoader {
     private final List<LibrarySourceProvider> PROVIDERS = new ArrayList<>();
 
-  @Override
+    @Override
     public void registerProvider(LibrarySourceProvider provider) {
         if (provider == null) {
             throw new IllegalArgumentException("provider is null.");
@@ -98,12 +92,12 @@ class CopiedLibrarySourceLoader implements LibrarySourceLoader {
         PROVIDERS.add(provider);
     }
 
-  @Override
+    @Override
     public void clearProviders() {
         PROVIDERS.clear();
     }
 
-  @Override
+    @Override
     public InputStream getLibrarySource(VersionedIdentifier libraryIdentifier) {
         if (libraryIdentifier == null) {
             throw new IllegalArgumentException("libraryIdentifier is null.");

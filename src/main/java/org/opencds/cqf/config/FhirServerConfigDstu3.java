@@ -39,7 +39,7 @@ public class FhirServerConfigDstu3 extends BaseJavaConfigDstu3
     @Bean()
     public LocalContainerEntityManagerFactoryBean entityManagerFactory() {
         LocalContainerEntityManagerFactoryBean retVal = super.entityManagerFactory();
-        retVal.setPersistenceUnitName(HapiProperties.getPersistenceUnitName());
+        retVal.setPersistenceUnitName("HAPI_STU3_PU");
 
         try {
             retVal.setDataSource(myDataSource);
