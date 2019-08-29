@@ -42,7 +42,7 @@
         <url-pattern>/LogMessages</url-pattern>
     </servlet-mapping> -->
 
-    <servlet>
+    <!-- <servlet>
         <servlet-name>cds-services</servlet-name>
         <servlet-class>org.opencds.cqf.servlet.CdsHooksServlet</servlet-class>
         <load-on-startup>4</load-on-startup>
@@ -54,7 +54,7 @@
     <servlet-mapping>
         <servlet-name>cds-services</servlet-name>
         <url-pattern>/cds-services/*</url-pattern>
-    </servlet-mapping>
+    </servlet-mapping> -->
 
     <servlet>
         <servlet-name>qdm54</servlet-name>
@@ -98,7 +98,7 @@
 
     <servlet>
         <servlet-name>fhirServletDstu3</servlet-name>
-        <servlet-class>org.opencds.cqf.servlet.ThemisServlet</servlet-class>
+        <servlet-class>org.opencds.cqf.servlet.BaseServlet</servlet-class>
         <load-on-startup>1</load-on-startup>
     </servlet>
     <servlet-mapping>
@@ -114,8 +114,8 @@
         <filter-name>cross-origin</filter-name>
         <url-pattern>/baseDstu3/*</url-pattern>
     </filter-mapping>
-    <filter-mapping>
+    <!-- <filter-mapping>
         <filter-name>cross-origin</filter-name>
         <url-pattern>/cds-services/*</url-pattern>
-    </filter-mapping>
+    </filter-mapping> -->
 </web-app>
