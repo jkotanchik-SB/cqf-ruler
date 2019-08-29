@@ -8,14 +8,12 @@ import javax.annotation.PostConstruct;
 import org.opencds.cqf.helpers.PostgresHelper;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Import;
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 import ca.uhn.fhir.context.ConfigurationException;
 
 @Configuration
-@Import(FhirServerConfigCommon.class)
 @EnableTransactionManagement()
 public class ThemisServerConfigDstu3 extends FhirServerConfigDstu3 {
     public ThemisServerConfigDstu3() {
