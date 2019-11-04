@@ -34,7 +34,7 @@ public class Qdm54DataProvider implements DataProvider
     {
         List<Object> retVal = new ArrayList<>();
         List<BaseType> candidates = new ArrayList<>();
-        boolean includeCandidate = true;
+        boolean includeCandidate = false;
 
         if (valueSet != null && valueSet.startsWith("urn:oid:"))
         {
@@ -100,17 +100,36 @@ public class Qdm54DataProvider implements DataProvider
 
             if (codes != null)
             {
-                Set<String> hash = new HashSet<String>();
+                Set<String> fullMatch = new HashSet<String>();
+                Set<String> codeMatch = new HashSet<String>();
                 for (Code code : codes)
                 {
-                    hash.add(code.getSystem() + code.getCode());
+                    if (code.getCode() == null) {
+                        // Uh... How'd this happen?
+                        // We should probably validate this in the terminology provider.
+                        // There's nothing to match on, so skip this code.
+                        continue;
+                    }
+
+                    if (code.getSystem() != null) {
+                        fullMatch.add(code.getSystem() + code.getCode());
+                    }
+
+                    codeMatch.add(code.getCode());
                 }
 
                 for (BaseType candidate : candidates)
                 {
                     org.opencds.cqf.qdm.fivepoint4.model.Code c = candidate.getCode();
-                    if (c != null && c.getSystem() != null && c.getCode() != null && hash.contains(c.getSystem() + c.getCode()))
+                    if (c != null && c.getSystem() != null && c.getCode() != null && fullMatch.contains(c.getSystem() + c.getCode()))
                     {
+                        retVal.add(candidate);
+                    }
+
+                    // This is a work around for test data not having the system defined.
+                    // Once test data does have the system defined this should be removed
+                    // and we should only return complete matches
+                    if (c != null && c.getCode() != null && c.getSystem() == null && codeMatch.contains(c.getCode())) {
                         retVal.add(candidate);
                     }
                 }
