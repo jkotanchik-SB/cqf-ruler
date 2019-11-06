@@ -34,7 +34,6 @@ public class Qdm54DataProvider implements DataProvider
     {
         List<Object> retVal = new ArrayList<>();
         List<BaseType> candidates = new ArrayList<>();
-        boolean includeCandidate = false;
 
         if (valueSet != null && valueSet.startsWith("urn:oid:"))
         {
@@ -87,6 +86,11 @@ public class Qdm54DataProvider implements DataProvider
             throw new RuntimeException("Error retrieving QDM resource of type " + dataType);
         }
 
+        // Add all candidates
+        for (BaseType candidate : candidates) {
+            retVal.add(candidate);
+        }
+
         if (codePath != null && !codePath.equals(""))
         {
             if (valueSet != null && !valueSet.equals(""))
@@ -123,14 +127,18 @@ public class Qdm54DataProvider implements DataProvider
                     org.opencds.cqf.qdm.fivepoint4.model.Code c = candidate.getCode();
                     if (c != null && c.getSystem() != null && c.getCode() != null && fullMatch.contains(c.getSystem() + c.getCode()))
                     {
-                        retVal.add(candidate);
+                        //retVal.add(candidate);
                     }
-
+                    else 
                     // This is a work around for test data not having the system defined.
                     // Once test data does have the system defined this should be removed
                     // and we should only return complete matches
                     if (c != null && c.getCode() != null && c.getSystem() == null && codeMatch.contains(c.getCode())) {
-                        retVal.add(candidate);
+                        //retVal.add(candidate);
+                    }
+                    else 
+                    {
+                        retVal.remove(candidate);
                     }
                 }
             }
@@ -139,11 +147,6 @@ public class Qdm54DataProvider implements DataProvider
         if (dateRange != null)
         {
             // TODO
-        }
-
-        if (retVal.isEmpty() && !candidates.isEmpty() && includeCandidate)
-        {
-            retVal.addAll(candidates);
         }
 
         return ensureIterable(retVal);
