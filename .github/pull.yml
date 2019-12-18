@@ -1,6 +1,9 @@
-version: "1"
+version: "2"
 rules:                      # Array of rules
   - base: master            # Required. Target branch
     upstream: DBCG:master   # Required. Must be in the same fork network.
     mergeMethod: merge      # Optional, one of [none, merge, squash, rebase, hardreset], Default: none.
+  - base: refactored-engine-dataprovider
+    upstream: DBCG:refactored-engine-dataprovider
+    mergeMethod: merge
 label: ":arrow_heading_down: pull"  # Optional
