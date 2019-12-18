@@ -6,6 +6,8 @@ import java.util.List;
 
 import javax.servlet.ServletException;
 
+import ca.uhn.fhir.jpa.provider.TerminologyUploaderProvider;
+import ca.uhn.fhir.jpa.util.ResourceProviderFactory;
 import org.hl7.fhir.dstu3.model.ActivityDefinition;
 import org.hl7.fhir.dstu3.model.Bundle;
 import org.hl7.fhir.dstu3.model.CodeSystem;
@@ -17,12 +19,15 @@ import org.hl7.fhir.dstu3.model.PlanDefinition;
 import org.hl7.fhir.dstu3.model.ValueSet;
 import org.hl7.fhir.instance.model.api.IBaseResource;
 import org.opencds.cqf.common.evaluation.EvaluationProviderFactory;
+import org.opencds.cqf.common.retrieve.JpaFhirRetrieveProvider;
 import org.opencds.cqf.common.config.HapiProperties;
 import org.opencds.cqf.cql.terminology.TerminologyProvider;
 import org.opencds.cqf.dstu3.evaluation.ProviderFactory;
 import org.opencds.cqf.dstu3.providers.ActivityDefinitionApplyProvider;
 import org.opencds.cqf.dstu3.providers.CacheValueSetsProvider;
 import org.opencds.cqf.dstu3.providers.CodeSystemUpdateProvider;
+import org.opencds.cqf.dstu3.providers.CodeTerminologyRef;
+import org.opencds.cqf.dstu3.providers.CqfMeasure;
 import org.opencds.cqf.dstu3.providers.CqlExecutionProvider;
 import org.opencds.cqf.dstu3.providers.ApplyCqlOperationProvider;
 import org.opencds.cqf.dstu3.providers.MeasureOperationsProvider;
@@ -31,6 +36,8 @@ import org.opencds.cqf.dstu3.providers.JpaTerminologyProvider;
 import org.opencds.cqf.dstu3.providers.LibraryOperationsProvider;
 import org.opencds.cqf.dstu3.providers.NarrativeProvider;
 import org.opencds.cqf.dstu3.providers.PlanDefinitionApplyProvider;
+import org.opencds.cqf.dstu3.providers.PopulationCriteriaMap;
+import org.opencds.cqf.dstu3.providers.VersionedTerminologyRef;
 import org.springframework.context.ApplicationContext;
 import org.springframework.web.cors.CorsConfiguration;
 
@@ -42,11 +49,11 @@ import ca.uhn.fhir.jpa.dao.IFhirSystemDao;
 import ca.uhn.fhir.jpa.provider.BaseJpaResourceProvider;
 import ca.uhn.fhir.jpa.provider.dstu3.JpaConformanceProviderDstu3;
 import ca.uhn.fhir.jpa.provider.dstu3.JpaSystemProviderDstu3;
-import ca.uhn.fhir.jpa.provider.dstu3.TerminologyUploaderProviderDstu3;
 import ca.uhn.fhir.jpa.rp.dstu3.LibraryResourceProvider;
 import ca.uhn.fhir.jpa.rp.dstu3.MeasureResourceProvider;
 import ca.uhn.fhir.jpa.rp.dstu3.ValueSetResourceProvider;
 import ca.uhn.fhir.jpa.search.DatabaseBackedPagingProvider;
+import ca.uhn.fhir.jpa.searchparam.registry.ISearchParamRegistry;
 import ca.uhn.fhir.jpa.term.IHapiTerminologySvcDstu3;
 import ca.uhn.fhir.narrative.DefaultThymeleafNarrativeGenerator;
 import ca.uhn.fhir.rest.client.api.ServerValidationModeEnum;
@@ -72,6 +79,10 @@ public class BaseServlet extends RestfulServer {
         // Fhir Context
         this.fhirContext = appCtx.getBean(FhirContext.class);
         this.fhirContext.getRestfulClientFactory().setServerValidationMode(ServerValidationModeEnum.NEVER);
+		this.fhirContext.registerCustomType(VersionedTerminologyRef.class);
+		this.fhirContext.registerCustomType(CodeTerminologyRef.class);
+		this.fhirContext.registerCustomType(PopulationCriteriaMap.class);
+		this.fhirContext.registerCustomType(CqfMeasure.class);
         setFhirContext(this.fhirContext);
 
 
@@ -83,21 +94,19 @@ public class BaseServlet extends RestfulServer {
         Object systemProvider = appCtx.getBean("mySystemProviderDstu3", JpaSystemProviderDstu3.class);
         registerProvider(systemProvider);
 
-        List<IResourceProvider> resourceProviders = appCtx.getBean("myResourceProvidersDstu3", List.class);
-        registerProviders(resourceProviders);
+        ResourceProviderFactory resourceProviders = appCtx.getBean("myResourceProvidersDstu3", ResourceProviderFactory.class);
+        registerProviders(resourceProviders.createProviders());
 
         JpaConformanceProviderDstu3 confProvider = new JpaConformanceProviderDstu3(this, systemDao, appCtx.getBean(DaoConfig.class));
         confProvider.setImplementationDescription("CQF Ruler FHIR DSTU3 Server");
         setServerConformanceProvider(confProvider);
 
-        registerProvider(appCtx.getBean(TerminologyUploaderProviderDstu3.class));
+        ISearchParamRegistry searchParamRegistry = appCtx.getBean(ISearchParamRegistry.class);
 
-        TerminologyProvider localSystemTerminologyProvider = new JpaTerminologyProvider(appCtx.getBean("terminologyService", IHapiTerminologySvcDstu3.class), getFhirContext(), (ValueSetResourceProvider)this.getResourceProvider(ValueSet.class));
-        EvaluationProviderFactory providerFactory = new ProviderFactory(this.fhirContext, this.registry, localSystemTerminologyProvider);
+        JpaTerminologyProvider localSystemTerminologyProvider = new JpaTerminologyProvider(appCtx.getBean("terminologyService", IHapiTerminologySvcDstu3.class), getFhirContext(), (ValueSetResourceProvider)this.getResourceProvider(ValueSet.class));
+        EvaluationProviderFactory providerFactory = new ProviderFactory(this.fhirContext, this.registry, searchParamRegistry, localSystemTerminologyProvider);
 
-        resolveProviders(providerFactory);
-
-        // CdsHooksServlet.provider = provider;
+        resolveProviders(providerFactory, localSystemTerminologyProvider, this.registry, searchParamRegistry);
 
         /*
          * ETag Support
@@ -148,7 +157,7 @@ public class BaseServlet extends RestfulServer {
             setServerAddressStrategy(new HardcodedServerAddressStrategy(serverAddress));
         }
 
-        registerProvider(appCtx.getBean(TerminologyUploaderProviderDstu3.class));
+        registerProvider(appCtx.getBean(TerminologyUploaderProvider.class));
 
         if (HapiProperties.getCorsEnabled())
         {
@@ -175,7 +184,7 @@ public class BaseServlet extends RestfulServer {
 
     // Since resource provider resolution not lazy, the providers here must be resolved in the correct
     // order of dependencies.
-    private void resolveProviders(EvaluationProviderFactory providerFactory)
+    private void resolveProviders(EvaluationProviderFactory providerFactory, JpaTerminologyProvider localSystemTerminologyProvider, DaoRegistry registry, ISearchParamRegistry searchParamRegistry)
             throws ServletException
     {
         NarrativeProvider narrativeProvider = new NarrativeProvider();
@@ -212,9 +221,18 @@ public class BaseServlet extends RestfulServer {
         ActivityDefinitionApplyProvider actDefProvider = new ActivityDefinitionApplyProvider(this.fhirContext, cql, this.getDao(ActivityDefinition.class));
         this.registerProvider(actDefProvider);
 
+
+        JpaFhirRetrieveProvider localSystemRetrieveProvider = new JpaFhirRetrieveProvider(registry, searchParamRegistry);
+
         // PlanDefinition processing
-        PlanDefinitionApplyProvider planDefProvider = new PlanDefinitionApplyProvider(this.fhirContext, actDefProvider, this.getDao(PlanDefinition.class), this.getDao(ActivityDefinition.class), cql);
+        PlanDefinitionApplyProvider planDefProvider = new PlanDefinitionApplyProvider(this.fhirContext, actDefProvider, this.getDao(PlanDefinition.class), this.getDao(ActivityDefinition.class), cql, libraryProvider, 
+        localSystemTerminologyProvider, localSystemRetrieveProvider);
         this.registerProvider(planDefProvider);
+
+        CdsHooksServlet.setPlanDefinitionProvider(planDefProvider);
+        CdsHooksServlet.setLibraryResolutionProvider(libraryProvider);
+        CdsHooksServlet.setSystemTerminologyProvider(localSystemTerminologyProvider);
+        CdsHooksServlet.setSystemRetrieveProvider(localSystemRetrieveProvider);
     }
 
     protected <T extends IBaseResource> IFhirResourceDao<T> getDao(Class<T> clazz) {
