@@ -6,4 +6,7 @@ rules:                      # Array of rules
   - base: refactored-engine-dataprovider
     upstream: DBCG:refactored-engine-dataprovider
     mergeMethod: merge
+  - base: develop
+    upstream: DBCG:develop
+    mergeMethod: merge
 label: ":arrow_heading_down: pull"  # Optional
