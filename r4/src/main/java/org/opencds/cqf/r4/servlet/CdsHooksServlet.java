@@ -38,6 +38,9 @@ import org.opencds.cqf.common.exceptions.InvalidRequestException;
 import org.opencds.cqf.common.providers.LibraryResolutionProvider;
 import org.opencds.cqf.common.retrieve.JpaFhirRetrieveProvider;
 import org.opencds.cqf.cql.engine.data.CompositeDataProvider;
+import org.opencds.cqf.cql.engine.debug.DebugAction;
+import org.opencds.cqf.cql.engine.debug.DebugLocator;
+import org.opencds.cqf.cql.engine.debug.DebugMap;
 import org.opencds.cqf.cql.engine.execution.Context;
 import org.opencds.cqf.cql.engine.execution.LibraryLoader;
 import org.opencds.cqf.cql.engine.fhir.exception.DataProviderException;
@@ -142,6 +145,11 @@ public class CdsHooksServlet extends HttpServlet {
             CompositeDataProvider provider = new CompositeDataProvider(resolver, fhirRetrieveProvider);
 
             Context context = new Context(library);
+
+            DebugMap debugMap = new DebugMap();
+            debugMap.setIsLoggingEnabled(true);
+            context.setDebugMap(debugMap);
+
             context.registerDataProvider("http://hl7.org/fhir", provider); // TODO make sure tooling handles remote
                                                                            // provider case
             context.registerTerminologyProvider(jpaTerminologyProvider);
